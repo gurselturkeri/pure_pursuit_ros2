@@ -13,8 +13,6 @@ This ROS 2 package implements a configurable **Pure Pursuit** controller for dif
 
 ---
 
-## 🎯 Lookahead Distance Effect
-
 Smaller lookahead distance → more aggressive turning  
 Larger lookahead distance → smoother but less accurate tracking
 
@@ -32,3 +30,4 @@ Larger lookahead distance → smoother but less accurate tracking
 
 ```bash
 ros2 launch pure_pursuit_ros2 pure_pursuit.launch.py
+```
