@@ -1,0 +1,8 @@
+pure_pursuit_node:
+  ros__parameters:
+    lookahead_distance: 0.9
+    wheelbase_length: 0.5
+    max_linear_speed: 0.5
+    pose_topic: /current_pose
+    path_topic: /waypoints
+    cmd_vel_topic: /cmd_vel
