@@ -10,7 +10,7 @@ import math
 class PurePursuit(Node):
     def __init__(self):
         super().__init__('pure_pursuit_node')
-
+        self.get_logger().info('Pure Pursuit Node Initialized')
         # Declare all parameters
         self.declare_parameter('lookahead_distance', 0.9)
         self.declare_parameter('wheelbase_length', 0.5)
@@ -30,6 +30,7 @@ class PurePursuit(Node):
         self.get_logger().info(f"Subscribing to pose: {pose_topic}")
         self.get_logger().info(f"Subscribing to path: {path_topic}")
         self.get_logger().info(f"Publishing to cmd_vel: {cmd_topic}")
+
 
         self.pose_sub = self.create_subscription(PoseStamped, pose_topic, self.pose_callback, 10)
         self.path_sub = self.create_subscription(Path, path_topic, self.path_callback, 10)
