@@ -53,7 +53,9 @@ class PurePursuit(Node):
         if not self.original_path:
             self.original_path = self.waypoints.copy()
 
-    def get_yaw_from_quaternion(self, q):
+
+    # https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+    def get_yaw_from_quaternion(self, q): 
         siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         return math.atan2(siny_cosp, cosy_cosp)
@@ -79,10 +81,20 @@ class PurePursuit(Node):
             self.get_logger().info("No valid lookahead point.")
             return
 
-        lx = np.cos(-yaw) * (lookahead_point[0] - x) - np.sin(-yaw) * (lookahead_point[1] - y)
-        ly = np.sin(-yaw) * (lookahead_point[0] - x) + np.cos(-yaw) * (lookahead_point[1] - y)
+        # Distance to lookahead point
+        Ld = np.hypot(lookahead_point[0] - x, lookahead_point[1] - y)
 
-        curvature = 2 * ly / (self.lookahead_distance ** 2)
+        # Angle between robot heading and vector to lookahead
+        path_angle = math.atan2(lookahead_point[1] - y, lookahead_point[0] - x)
+        alpha = self.normalize_angle(path_angle - yaw)
+
+        # Compute radius R and curvature
+        if abs(alpha) < 1e-6:
+            curvature = 0.0
+        else:
+            R = Ld / (2 * math.sin(alpha))
+            curvature = 1 / R
+
         steering_angle = math.atan(curvature * self.wheelbase_length)
 
         self.trajectory.append((x, y))
@@ -91,8 +103,23 @@ class PurePursuit(Node):
         cmd.linear.x = self.max_linear_speed
         cmd.angular.z = steering_angle
         self.cmd_pub.publish(cmd)
+        
+        # Save R and curvature for visualization
+        self.curvature = curvature
+        self.R = R if abs(alpha) > 1e-6 else float('inf')
+        self.alpha = alpha
+
 
         self.visualize(x, y, yaw, lookahead_point)
+
+    def normalize_angle(self, angle):
+        """Normalize angle to [-pi, pi]"""
+        while angle > math.pi:
+            angle -= 2 * math.pi
+        while angle < -math.pi:
+            angle += 2 * math.pi
+        return angle
+
 
     def visualize(self, x, y, yaw, lookahead_point):
         self.ax.clear()
@@ -105,9 +132,24 @@ class PurePursuit(Node):
             tx, ty = zip(*self.trajectory)
             self.ax.plot(tx, ty, 'b-', linewidth=1.5, label='Trajectory')
 
+        # Robot and lookahead point
         self.ax.plot(x, y, 'bo', label='Robot')
         self.ax.arrow(x, y, np.cos(yaw), np.sin(yaw), head_width=0.2, color='blue')
         self.ax.plot(lookahead_point[0], lookahead_point[1], 'ro', label='Lookahead')
+
+        # Draw turning circle if curvature is valid
+        if hasattr(self, 'R') and math.isfinite(self.R) and abs(self.curvature) > 1e-6:
+            # Calculate center of turning circle
+            radius = self.R
+            sign = np.sign(self.alpha)  # left or right turn
+            cx = x - radius * math.sin(yaw) * sign
+            cy = y + radius * math.cos(yaw) * sign
+
+            circle = plt.Circle((cx, cy), radius, color='g', fill=False, linestyle='--', linewidth=1.2, label='Turning Radius')
+            self.ax.add_patch(circle)
+
+            self.ax.plot(cx, cy, 'go', label='Turning Center')
+            self.ax.text(cx, cy, f"R={radius:.2f}", fontsize=9, color='green')
 
         self.ax.set_xlim(x - 10, x + 5)
         self.ax.set_ylim(y - 10, y + 5)
