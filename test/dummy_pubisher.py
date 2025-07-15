@@ -65,7 +65,7 @@ class SimulatedRobot(Node):
         amplitude = 1.0     # Height of the square wave
         period = 4.0        # Width of each step (x units)
         dx = 0.5            # Step size along x
-        steps = 50          # Number of points to generate
+        steps = 200          # Number of points to generate
 
         for i in range(steps):
             px = self.x + i * dx

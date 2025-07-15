@@ -1,6 +1,7 @@
 # Pure Pursuit ROS 2 Controller
 
 This ROS 2 package implements a configurable **Pure Pursuit** controller for differential-drive robots.
+![diagram](resource/diagram.png)
 
 
 ## 🧩 Parameters
@@ -10,9 +11,50 @@ This ROS 2 package implements a configurable **Pure Pursuit** controller for dif
 | `lookahead_distance` | Distance to target point ahead    | `0.9`   |
 | `wheelbase_length`   | Robot's wheelbase (m)            | `0.5`   |
 | `max_linear_speed`   | Max forward speed (m/s)          | `0.5`   |
-| `pose_topic` | Distance to target point ahead    | `/current_pose`   |
-| `path_topic`   | Robot's wheelbase (m)            | `/waypoints`   |
-| `cmd_vel_topic`   | Max forward speed (m/s)          | `/cmd_vel`   |
+| `pose_topic` | Pose topic    | `/current_pose`   |
+| `path_topic`   | Path topic           | `/waypoints`   |
+| `cmd_vel_topic`   | Cmd_Vel topic          | `/cmd_vel`   |
+
+1. **Robot Pose Extraction**:
+   - The robot's current position and heading (yaw angle) are extracted:
+     ```
+     (x, y) — position
+     θ (yaw) — extracted from quaternion using:
+     θ = atan2(2(wz + xy), 1 - 2(y² + z²))
+     ```
+
+2. **Lookahead Point Selection**:
+   - From the global path, the first waypoint at a distance greater than the lookahead distance `L_d` is selected:
+     ```
+     L_d = sqrt((x_wp - x)² + (y_wp - y)²)
+     ```
+
+3. **Heading Error (α)**:
+   - The angle between the robot's heading and the direction to the lookahead point:
+     ```
+     α = atan2(y_wp - y, x_wp - x) - θ
+     ```
+
+4. **Curvature (κ)**:
+   - If α ≈ 0, robot is aligned — curvature is zero.
+   - Otherwise:
+     ```
+     R = L_d / (2 * sin(α))
+     κ = 1 / R
+     ```
+
+5. **Steering Angle (δ)**:
+   - Based on curvature and the vehicle's wheelbase `L`:
+     ```
+     δ = atan(κ * L)
+     ```
+
+6. **Velocity Commands**:
+   - The controller publishes a velocity command:
+     ```
+     Linear velocity (v): constant (max_linear_speed)
+     Angular velocity (ω): δ
+     ```
 
 
 ---

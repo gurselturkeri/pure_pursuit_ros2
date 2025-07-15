@@ -139,7 +139,7 @@ class PurePursuit(Node):
 
         # Draw turning circle if curvature is valid
         if hasattr(self, 'R') and math.isfinite(self.R) and abs(self.curvature) > 1e-6:
-            # Calculate center of turning circle
+            # Calculate center of turning circle 
             radius = self.R
             sign = np.sign(self.alpha)  # left or right turn
             cx = x - radius * math.sin(yaw) * sign
