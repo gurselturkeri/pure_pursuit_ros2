@@ -16,6 +16,8 @@ class SimulatedRobot(Node):
         self.path_pub = self.create_publisher(Path, '/waypoints', 10)
         self.cmd_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_callback, 10)
 
+        self.path_msg = self.generate_path()
+        self.path_pub.publish(self.path_msg) # publish once
         # Robot state
         self.x = 0.0
         self.y = 0.0
@@ -58,17 +60,18 @@ class SimulatedRobot(Node):
         pose_msg.pose.orientation.w = q[3]
         self.pose_pub.publish(pose_msg)
 
-        # --- Generate and publish square wave path ---
+    def generate_path(self):
         path_msg = Path()
-        path_msg.header = pose_msg.header
+        path_msg.header.frame_id = 'map'
+        path_msg.header.stamp = self.get_clock().now().to_msg()
 
-        amplitude = 1.0     # Height of the square wave
-        period = 4.0        # Width of each step (x units)
-        dx = 0.5            # Step size along x
-        steps = 200          # Number of points to generate
+        amplitude = 1.0
+        period = 4.0
+        dx = 0.5
+        steps = 200
 
         for i in range(steps):
-            px = self.x + i * dx
+            px = i * dx
             py = amplitude if int(px // period) % 2 == 0 else -amplitude
 
             p = PoseStamped()
@@ -78,7 +81,8 @@ class SimulatedRobot(Node):
             p.pose.orientation.w = 1.0
             path_msg.poses.append(p)
 
-        self.path_pub.publish(path_msg)
+        return path_msg
+
 
 
 def main(args=None):
